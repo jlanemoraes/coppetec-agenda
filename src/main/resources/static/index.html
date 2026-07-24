@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#176b3a">
+    <title>Agenda Telefônica COPPETEC</title>
+    <link rel="icon" href="/assets/logo-coppetec.png">
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
+
+    <header class="site-header">
+        <div class="header-inner">
+            <div class="brand">
+                <span class="brand-logo">
+                    <img src="/assets/logo-coppetec.png" alt="COPPETEC">
+                </span>
+                <div class="brand-copy">
+                    <span class="eyebrow">Fundação COPPETEC</span>
+                    <h1>Agenda Telefônica</h1>
+                    <p>Contatos internos e ramais</p>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <button
+                    class="header-menu-trigger"
+                    id="btnAbrirLogin"
+                    type="button"
+                    aria-label="Abrir acesso administrativo"
+                >
+                    <svg aria-hidden="true" viewBox="0 0 24 24">
+                        <circle cx="5" cy="12" r="1"></circle>
+                        <circle cx="12" cy="12" r="1"></circle>
+                        <circle cx="19" cy="12" r="1"></circle>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="page-shell" id="conteudo">
+        <section class="intro" aria-labelledby="titulo-consulta">
+            <div>
+                <span class="section-kicker">Consulta rápida</span>
+                <h2 id="titulo-consulta">Encontre pessoas e setores</h2>
+                <p>Consulte os contatos internos da COPPETEC.</p>
+            </div>
+            <div class="prefix-card" aria-label="Prefixo telefônico">
+                <span>Prefixo</span>
+                <strong>(21) 3622</strong>
+            </div>
+        </section>
+
+        <section class="admin-toolbar" id="barraAdministrativa" aria-label="Ferramentas administrativas" hidden>
+            <div class="admin-toolbar-status">
+                <span class="status-dot" aria-hidden="true"></span>
+                <div>
+                    <strong>Modo administrador</strong>
+                    <span>Você pode gerenciar os contatos da agenda</span>
+                </div>
+            </div>
+            <div class="admin-toolbar-actions">
+                <span class="admin-contact-count" id="contadorAdmin">0 contatos</span>
+                <button class="button button-primary" id="btnNovoContato" type="button">
+                    <svg aria-hidden="true" viewBox="0 0 24 24">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                    Novo contato
+                </button>
+                <button class="button button-secondary" id="btnLogout" type="button">Sair</button>
+            </div>
+        </section>
+
+        <section class="directory-panel" aria-label="Lista de contatos">
+            <div class="directory-controls" id="controlesAgenda">
+            <div class="toolbar">
+                <div class="search-area">
+                    <div class="search-actions">
+                        <div class="search-field">
+                            <svg aria-hidden="true" viewBox="0 0 24 24">
+                                <circle cx="11" cy="11" r="7"></circle>
+                                <path d="m20 20-4-4"></path>
+                            </svg>
+                            <label class="sr-only" for="inputBusca">Pesquisar contatos</label>
+                            <input
+                                type="search"
+                                id="inputBusca"
+                                placeholder="Buscar nome, gerência, setor ou ramal"
+                                autocomplete="off"
+                            >
+                            <button class="clear-search" id="btnLimparBusca" type="button" aria-label="Limpar pesquisa" hidden>
+                                <svg aria-hidden="true" viewBox="0 0 24 24">
+                                    <path d="m7 7 10 10M17 7 7 17"></path>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <button
+                            class="filter-toggle"
+                            id="btnAlternarFiltros"
+                            type="button"
+                            aria-expanded="false"
+                            aria-controls="painelFiltros"
+                        >
+                            <svg aria-hidden="true" viewBox="0 0 24 24">
+                                <path d="M4 6h16M7 12h10M10 18h4"></path>
+                            </svg>
+                            Filtros
+                            <span class="filter-count" id="contadorFiltros" hidden>0</span>
+                        </button>
+                    </div>
+
+                    <div class="results-meta" aria-live="polite">
+                        <strong id="contadorContatos">Carregando...</strong>
+                        <span id="descricaoResultados">Aguarde um instante</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filter-panel" id="painelFiltros" aria-label="Filtros da agenda" hidden>
+                <div class="filter-field">
+                    <label for="filtroGerencia">Gerência</label>
+                    <select id="filtroGerencia">
+                        <option value="">Todas as gerências</option>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label for="filtroSetor">Setor</label>
+                    <select id="filtroSetor">
+                        <option value="">Todos os setores</option>
+                    </select>
+                </div>
+                <button class="clear-filters" id="btnLimparFiltros" type="button" hidden>
+                    <svg aria-hidden="true" viewBox="0 0 24 24">
+                        <path d="m7 7 10 10M17 7 7 17"></path>
+                    </svg>
+                    Limpar filtros
+                </button>
+            </div>
+
+            <div class="active-filters" id="filtrosAtivos" hidden>
+                <div class="filter-chips" id="listaFiltrosAtivos" aria-label="Filtros ativos"></div>
+            </div>
+            </div>
+
+            <div class="loading-state" id="estadoCarregamento">
+                <span class="spinner" aria-hidden="true"></span>
+                <p>Carregando agenda...</p>
+            </div>
+
+            <div class="empty-state" id="estadoVazio" hidden>
+                <span class="empty-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="11" cy="11" r="7"></circle>
+                        <path d="m20 20-4-4"></path>
+                    </svg>
+                </span>
+                <h3>Nenhum contato encontrado</h3>
+                <p>Tente pesquisar com menos palavras ou confira o número do ramal.</p>
+                <button class="button button-secondary" id="btnLimparEstadoVazio" type="button">Limpar pesquisa</button>
+            </div>
+
+            <div class="error-state" id="estadoErro" role="alert" hidden>
+                <h3>Não foi possível carregar a agenda</h3>
+                <p>Verifique sua conexão e tente novamente.</p>
+                <button class="button button-primary" id="btnTentarNovamente" type="button">Tentar novamente</button>
+            </div>
+
+            <div class="table-wrapper" id="tabelaWrapper" hidden>
+                <table>
+                    <caption class="sr-only">Contatos internos da COPPETEC</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col" aria-sort="none">
+                                <button class="sort-button" type="button" data-sort="gerencia">
+                                    Gerência <span class="sort-icon" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" aria-sort="none">
+                                <button class="sort-button" type="button" data-sort="setor">
+                                    Setor <span class="sort-icon" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" aria-sort="none">
+                                <button class="sort-button" type="button" data-sort="usuario">
+                                    Usuário <span class="sort-icon" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" aria-sort="none" class="ramal-heading">
+                                <button class="sort-button" type="button" data-sort="ramal">
+                                    Ramal <span class="sort-icon" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" class="actions-heading admin-only" hidden>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpoTabela"></tbody>
+                </table>
+            </div>
+
+            <div class="contact-cards" id="listaCartoes" hidden></div>
+
+            <div class="load-more-area" id="areaCarregarMais" hidden>
+                <p id="resumoPaginacao">Exibindo 0 de 0 contatos</p>
+                <button class="button button-secondary load-more-button" id="btnCarregarMais" type="button">
+                    Carregar mais contatos
+                </button>
+            </div>
+        </section>
+
+        <p class="directory-note">
+            Para ligações externas, disque o prefixo <strong>(21) 3622</strong> antes do ramal.
+        </p>
+    </main>
+
+    <button class="back-to-top" id="btnVoltarTopo" type="button" aria-label="Voltar ao início da página" hidden>
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="m6 14 6-6 6 6"></path>
+        </svg>
+        <span>Topo</span>
+    </button>
+
+    <div class="modal-backdrop" id="loginModal" hidden>
+        <section class="modal" role="dialog" aria-modal="true" aria-labelledby="loginTitulo">
+            <button class="modal-close" id="btnFecharLogin" type="button" aria-label="Fechar">
+                <svg aria-hidden="true" viewBox="0 0 24 24">
+                    <path d="m7 7 10 10M17 7 7 17"></path>
+                </svg>
+            </button>
+            <div class="modal-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 13a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm7 8a7 7 0 0 0-14 0"/>
+                </svg>
+            </div>
+            <div class="modal-heading">
+                <span class="section-kicker">Área restrita</span>
+                <h2 id="loginTitulo">Acesso administrativo</h2>
+                <p>Entre para adicionar, editar ou remover contatos.</p>
+            </div>
+            <form id="login-form">
+                <div class="form-field">
+                    <label for="username">Usuário</label>
+                    <input type="text" id="username" name="username" autocomplete="username" required>
+                </div>
+                <div class="form-field">
+                    <label for="password">Senha</label>
+                    <input type="password" id="password" name="password" autocomplete="current-password" required>
+                </div>
+                <p class="form-message form-error" id="erro-mensagem" role="alert" hidden></p>
+                <button class="button button-primary button-full" type="submit">Entrar</button>
+            </form>
+        </section>
+    </div>
+
+    <div class="modal-backdrop drawer-backdrop" id="contatoModal" hidden>
+        <section class="modal contact-drawer" role="dialog" aria-modal="true" aria-labelledby="modalTitulo">
+            <button class="modal-close" id="btnFecharContato" type="button" aria-label="Fechar">
+                <svg aria-hidden="true" viewBox="0 0 24 24">
+                    <path d="m7 7 10 10M17 7 7 17"></path>
+                </svg>
+            </button>
+            <div class="modal-heading">
+                <span class="section-kicker">Agenda interna</span>
+                <h2 id="modalTitulo">Adicionar contato</h2>
+                <p>Preencha os dados que serão exibidos na consulta pública.</p>
+            </div>
+            <p class="unsaved-indicator" id="indicadorAlteracoes" hidden>
+                <span aria-hidden="true"></span>
+                Alterações ainda não salvas
+            </p>
+            <form id="contato-form">
+                <input type="hidden" id="contatoId">
+                <div class="form-grid">
+                    <div class="form-field">
+                        <label for="gerencia">Gerência <span aria-hidden="true">*</span></label>
+                        <input type="text" id="gerencia" required>
+                    </div>
+                    <div class="form-field">
+                        <label for="setor">Setor <span aria-hidden="true">*</span></label>
+                        <input type="text" id="setor" required>
+                    </div>
+                    <div class="form-field">
+                        <label for="usuario">Usuário <span aria-hidden="true">*</span></label>
+                        <input type="text" id="usuario" required>
+                    </div>
+                    <div class="form-field">
+                        <label for="ramal">Ramal <span aria-hidden="true">*</span></label>
+                        <div class="ramal-input">
+                            <span>3622-</span>
+                            <input
+                                type="text"
+                                id="ramal"
+                                inputmode="numeric"
+                                maxlength="4"
+                                pattern="[0-9]{4}"
+                                aria-describedby="ramalAjuda"
+                                required
+                            >
+                        </div>
+                        <span class="field-help" id="ramalAjuda"><span id="contadorRamal">0</span>/4 dígitos</span>
+                    </div>
+                </div>
+                <p class="form-message form-error" id="erro-contato" role="alert" hidden></p>
+                <div class="modal-actions">
+                    <button class="button button-secondary" id="btnCancelarContato" type="button">Cancelar</button>
+                    <button class="button button-primary" id="btnSalvarContato" type="submit">Salvar contato</button>
+                </div>
+            </form>
+        </section>
+    </div>
+
+    <div class="modal-backdrop" id="confirmacaoModal" hidden>
+        <section class="modal modal-confirm" role="alertdialog" aria-modal="true" aria-labelledby="confirmacaoTitulo">
+            <div class="modal-icon modal-icon-danger" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 8v5M12 17h.01"></path>
+                    <path d="M10.3 4.5 3.5 17a2 2 0 0 0 1.8 3h13.4a2 2 0 0 0 1.8-3L13.7 4.5a2 2 0 0 0-3.4 0Z"></path>
+                </svg>
+            </div>
+            <div class="modal-heading">
+                <h2 id="confirmacaoTitulo">Excluir contato?</h2>
+                <p id="confirmacaoTexto">Esta ação não poderá ser desfeita.</p>
+            </div>
+            <div class="delete-summary">
+                <strong id="confirmacaoNome">Nome do contato</strong>
+                <span id="confirmacaoArea">Gerência · Setor</span>
+                <span class="delete-summary-phone" id="confirmacaoRamal">Ramal 3622-0000</span>
+            </div>
+            <div class="modal-actions">
+                <button class="button button-secondary" id="btnCancelarExclusao" type="button">Cancelar</button>
+                <button class="button button-danger" id="btnConfirmarExclusao" type="button">Excluir contato</button>
+            </div>
+        </section>
+    </div>
+
+    <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
+
+    <script src="/app.js" defer></script>
+</body>
+</html>

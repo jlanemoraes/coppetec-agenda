@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - pvc.yaml
+  - deployment.yaml
+  - service.yaml
+images:
+  - name: 192.168.1.188:8443/agenda/agenda-coppetec:1.0.1
+    newName: 192.168.1.188:8443/agenda/agenda-coppetec
+    newTag: "1.0.2"

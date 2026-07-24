@@ -1,0 +1,35 @@
+# Maven / Java
+target/
+*.class
+*.jar
+
+# Arquivos temporarios e logs
+.tmp/
+*.log
+nohup.out
+
+# IDE e sistema operacional
+.vscode/
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Bancos locais e copias historicas
+/agenda.db
+*.db.bak
+*.bak
+
+# Backups locais de paginas
+/backups-html/
+
+# Dados do importador legado (o banco oficial permanece em data/agenda.db)
+/data/contatos.json
+
+# Configuracoes locais e segredos
+.env
+.env.*
+!.env.example
+application-local.properties
+application-local.yml
+application-local.yaml

@@ -1,0 +1,35 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: git-clone-private
+  namespace: cicd
+spec:
+  params:
+    - name: url
+      type: string
+    - name: revision
+      type: string
+      default: main
+    - name: subdirectory
+      type: string
+      default: source
+  workspaces:
+    - name: output
+    - name: git-auth
+      readOnly: true
+  steps:
+    - name: clone
+      image: alpine/git:2.47.2
+      env:
+        - name: HOME
+          value: /tekton/home
+      script: |
+        #!/bin/sh
+        set -eu
+        mkdir -p "${HOME}"
+        cp "$(workspaces.git-auth.path)/.git-credentials" "${HOME}/.git-credentials"
+        cp "$(workspaces.git-auth.path)/.gitconfig" "${HOME}/.gitconfig"
+        chmod 600 "${HOME}/.git-credentials" "${HOME}/.gitconfig"
+        DEST="$(workspaces.output.path)/$(params.subdirectory)"
+        rm -rf "${DEST}"
+        git clone --branch "$(params.revision)" --single-branch "$(params.url)" "${DEST}"

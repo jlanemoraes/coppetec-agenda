@@ -1,0 +1,40 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: kaniko-build-push
+  namespace: cicd
+spec:
+  params:
+    - name: image
+      type: string
+    - name: dockerfile
+      type: string
+      default: Dockerfile
+    - name: context-subdirectory
+      type: string
+      default: source
+    - name: insecure-registry
+      type: string
+      default: "false"
+    - name: skip-tls-verify
+      type: string
+      default: "false"
+  workspaces:
+    - name: source
+    - name: dockerconfig
+      readOnly: true
+      mountPath: /kaniko/.docker
+  steps:
+    - name: build-and-push
+      image: gcr.io/kaniko-project/executor:v1.23.2-debug
+      script: |
+        #!/busybox/sh
+        set -eu
+        EXTRA_ARGS=""
+        if [ "$(params.insecure-registry)" = "true" ]; then EXTRA_ARGS="${EXTRA_ARGS} --insecure"; fi
+        if [ "$(params.skip-tls-verify)" = "true" ]; then EXTRA_ARGS="${EXTRA_ARGS} --skip-tls-verify"; fi
+        /kaniko/executor \
+          --dockerfile="$(workspaces.source.path)/$(params.context-subdirectory)/$(params.dockerfile)" \
+          --context="dir://$(workspaces.source.path)/$(params.context-subdirectory)" \
+          --destination="$(params.image)" \
+          --snapshot-mode=redo ${EXTRA_ARGS}

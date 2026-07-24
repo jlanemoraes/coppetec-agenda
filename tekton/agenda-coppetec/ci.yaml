@@ -1,0 +1,137 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: agenda-coppetec-build-push
+  namespace: cicd
+spec:
+  params:
+    - name: repo-url
+      type: string
+
+    - name: revision
+      type: string
+      default: main
+
+    - name: image
+      type: string
+
+    - name: skip-tls-verify
+      type: string
+      default: "true"
+
+  workspaces:
+    - name: shared
+
+    - name: git-auth
+      readOnly: true
+
+    - name: dockerconfig
+      readOnly: true
+      mountPath: /kaniko/.docker
+
+  steps:
+    - name: clone
+      image: alpine/git:2.47.2
+
+      env:
+        - name: HOME
+          value: /tekton/home
+
+      script: |
+        #!/bin/sh
+        set -eu
+
+        mkdir -p "${HOME}"
+
+        cp "$(workspaces.git-auth.path)/.git-credentials" \
+          "${HOME}/.git-credentials"
+
+        cp "$(workspaces.git-auth.path)/.gitconfig" \
+          "${HOME}/.gitconfig"
+
+        chmod 600 \
+          "${HOME}/.git-credentials" \
+          "${HOME}/.gitconfig"
+
+        rm -rf "$(workspaces.shared.path)/source"
+
+        git clone \
+          --branch "$(params.revision)" \
+          --single-branch \
+          "$(params.repo-url)" \
+          "$(workspaces.shared.path)/source"
+
+    - name: build-and-push
+      image: gcr.io/kaniko-project/executor:v1.23.2-debug
+
+      script: |
+        #!/busybox/sh
+        set -eu
+
+        TLS_ARGS=""
+
+        if [ "$(params.skip-tls-verify)" = "true" ]; then
+          TLS_ARGS="--skip-tls-verify"
+        fi
+
+        /kaniko/executor \
+          --context="dir://$(workspaces.shared.path)/source" \
+          --dockerfile="$(workspaces.shared.path)/source/Dockerfile" \
+          --destination="$(params.image)" \
+          --snapshot-mode=redo \
+          ${TLS_ARGS}
+
+---
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: agenda-coppetec-build
+  namespace: cicd
+spec:
+  params:
+    - name: repo-url
+      type: string
+
+    - name: revision
+      type: string
+      default: main
+
+    - name: image
+      type: string
+
+    - name: skip-tls-verify
+      type: string
+      default: "true"
+
+  workspaces:
+    - name: shared
+    - name: git-auth
+    - name: dockerconfig
+
+  tasks:
+    - name: build-agenda
+      taskRef:
+        name: agenda-coppetec-build-push
+
+      params:
+        - name: repo-url
+          value: $(params.repo-url)
+
+        - name: revision
+          value: $(params.revision)
+
+        - name: image
+          value: $(params.image)
+
+        - name: skip-tls-verify
+          value: $(params.skip-tls-verify)
+
+      workspaces:
+        - name: shared
+          workspace: shared
+
+        - name: git-auth
+          workspace: git-auth
+
+        - name: dockerconfig
+          workspace: dockerconfig

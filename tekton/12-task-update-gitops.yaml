@@ -1,0 +1,54 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: update-gitops-tag
+  namespace: cicd
+spec:
+  params:
+    - name: repo-url
+      type: string
+    - name: revision
+      type: string
+      default: main
+    - name: kustomization-path
+      type: string
+      default: apps/agenda-coppetec/kustomization.yaml
+    - name: image-tag
+      type: string
+  workspaces:
+    - name: workspace
+    - name: git-auth
+      readOnly: true
+  steps:
+    - name: update-and-push
+      image: alpine/git:2.47.2
+      env:
+        - name: HOME
+          value: /tekton/home
+      script: |
+        #!/bin/sh
+        set -eu
+        mkdir -p "${HOME}"
+        cp "$(workspaces.git-auth.path)/.git-credentials" "${HOME}/.git-credentials"
+        cp "$(workspaces.git-auth.path)/.gitconfig" "${HOME}/.gitconfig"
+        chmod 600 "${HOME}/.git-credentials" "${HOME}/.gitconfig"
+        DEST="$(workspaces.workspace.path)/gitops"
+        rm -rf "${DEST}"
+        git clone --branch "$(params.revision)" --single-branch "$(params.repo-url)" "${DEST}"
+        cd "${DEST}"
+        FILE="$(params.kustomization-path)"
+        test -f "${FILE}"
+        awk -v tag="$(params.image-tag)" '
+          /^[[:space:]]*newTag:/ {
+            match($0, /^[[:space:]]*/);
+            indent = substr($0, 1, RLENGTH);
+            print indent "newTag: \"" tag "\"";
+            next
+          }
+          { print }
+        ' "${FILE}" > "${FILE}.tmp"
+        mv "${FILE}.tmp" "${FILE}"
+        git add "${FILE}"
+        if git diff --cached --quiet; then echo "A tag já está atualizada no GitOps."; exit 0; fi
+        git commit -m "deploy(agenda-coppetec): imagem $(params.image-tag)"
+        git push origin "HEAD:$(params.revision)"

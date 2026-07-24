@@ -1,0 +1,91 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: agenda-coppetec-ci
+  namespace: cicd
+spec:
+  params:
+    - name: app-git-url
+      type: string
+    - name: app-git-revision
+      type: string
+      default: main
+    - name: image-repository
+      type: string
+    - name: image-tag
+      type: string
+      default: "1.0.1"
+    - name: gitops-git-url
+      type: string
+    - name: gitops-git-revision
+      type: string
+      default: main
+    - name: kustomization-path
+      type: string
+      default: apps/agenda-coppetec/kustomization.yaml
+    - name: insecure-registry
+      type: string
+      default: "false"
+    - name: skip-tls-verify
+      type: string
+      default: "false"
+  workspaces:
+    - name: shared
+    - name: dockerconfig
+    - name: git-auth
+  tasks:
+    - name: clone-source
+      taskRef:
+        name: git-clone-private
+      params:
+        - name: url
+          value: $(params.app-git-url)
+        - name: revision
+          value: $(params.app-git-revision)
+        - name: subdirectory
+          value: source
+      workspaces:
+        - name: output
+          workspace: shared
+        - name: git-auth
+          workspace: git-auth
+    - name: build-and-push
+      runAfter:
+        - clone-source
+      taskRef:
+        name: kaniko-build-push
+      params:
+        - name: image
+          value: $(params.image-repository):$(params.image-tag)
+        - name: dockerfile
+          value: Dockerfile
+        - name: context-subdirectory
+          value: source
+        - name: insecure-registry
+          value: $(params.insecure-registry)
+        - name: skip-tls-verify
+          value: $(params.skip-tls-verify)
+      workspaces:
+        - name: source
+          workspace: shared
+        - name: dockerconfig
+          workspace: dockerconfig
+    - name: update-gitops
+      runAfter:
+        - build-and-push
+      taskRef:
+        name: update-gitops-tag
+      params:
+        - name: repo-url
+          value: $(params.gitops-git-url)
+        - name: revision
+          value: $(params.gitops-git-revision)
+        - name: kustomization-path
+          value: $(params.kustomization-path)
+        - name: image-tag
+          value: $(params.image-tag)
+      workspaces:
+        - name: workspace
+          workspace: shared
+        - name: git-auth
+          workspace: git-auth

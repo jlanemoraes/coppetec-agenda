@@ -1,0 +1,160 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: agenda-trigger
+  namespace: cicd
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: agenda-trigger-eventlistener-binding
+  namespace: cicd
+subjects:
+  - kind: ServiceAccount
+    name: agenda-trigger
+    namespace: cicd
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tekton-triggers-eventlistener-roles
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: agenda-trigger-eventlistener-clusterbinding
+subjects:
+  - kind: ServiceAccount
+    name: agenda-trigger
+    namespace: cicd
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tekton-triggers-eventlistener-clusterroles
+
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerBinding
+metadata:
+  name: agenda-coppetec-binding
+  namespace: cicd
+spec:
+  params:
+    - name: revision
+      value: main
+
+    - name: short-sha
+      value: $(extensions.short_sha)
+
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: agenda-coppetec-template
+  namespace: cicd
+spec:
+  params:
+    - name: revision
+      description: Commit recebido pelo webhook
+
+    - name: short-sha
+      description: Sete primeiros caracteres do commit
+
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1
+      kind: PipelineRun
+      metadata:
+        generateName: agenda-coppetec-auto-
+        namespace: cicd
+        labels:
+          app.kubernetes.io/name: agenda-coppetec
+          app.kubernetes.io/managed-by: tekton-triggers
+          trigger.tekton.dev/source: gitea
+
+      spec:
+        pipelineRef:
+          name: agenda-coppetec-build
+
+        taskRunTemplate:
+          serviceAccountName: tekton-harbor
+
+        params:
+          - name: repo-url
+            value: http://192.168.1.27:3000/joaommoraes/agenda-coppetec.git
+
+          - name: revision
+            value: $(tt.params.revision)
+
+          - name: image
+            value: 192.168.1.188:8443/agenda/agenda-coppetec:git-$(tt.params.short-sha)
+
+          - name: skip-tls-verify
+            value: "true"
+
+        timeouts:
+          pipeline: 1h0m0s
+
+        workspaces:
+          - name: shared
+            volumeClaimTemplate:
+              metadata:
+                labels:
+                  app.kubernetes.io/name: agenda-coppetec
+              spec:
+                accessModes:
+                  - ReadWriteOnce
+                storageClassName: microk8s-hostpath
+                resources:
+                  requests:
+                    storage: 3Gi
+
+          - name: git-auth
+            secret:
+              secretName: agenda-git-auth
+
+          - name: dockerconfig
+            secret:
+              secretName: harbor-agenda-push
+              items:
+                - key: .dockerconfigjson
+                  path: config.json
+
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: agenda-coppetec-listener
+  namespace: cicd
+spec:
+  serviceAccountName: agenda-trigger
+
+  resources:
+    kubernetesResource:
+      serviceType: NodePort
+      servicePort: 8080
+
+  triggers:
+    - name: agenda-coppetec-main-push
+
+      interceptors:
+        - ref:
+            name: cel
+            kind: ClusterInterceptor
+          params:
+            - name: filter
+              value: >-
+                header.match('X-Gitea-Event', 'push') &&
+                body.ref == 'refs/heads/main' &&
+                body.repository.full_name == 'joaommoraes/agenda-coppetec'
+
+            - name: overlays
+              value:
+                - key: short_sha
+                  expression: "body.after.truncate(7)"
+
+      bindings:
+        - ref: agenda-coppetec-binding
+
+      template:
+        ref: agenda-coppetec-template
