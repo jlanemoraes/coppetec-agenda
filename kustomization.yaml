@@ -8,3 +8,6 @@ images:
   - name: HARBOR_HOST/HARBOR_PROJECT/agenda-coppetec
     newName: 192.168.1.188:8443/agenda/agenda-coppetec
     newTag: "1.0.13"
+
+patches:
+  - path: patch-bind-port-80.yaml
