@@ -5,6 +5,6 @@ resources:
   - deployment.yaml
   - service.yaml
 images:
-  - name: 192.168.1.188:8443/agenda/agenda-coppetec:1.0.1
+  - name: HARBOR_HOST/HARBOR_PROJECT/agenda-coppetec
     newName: 192.168.1.188:8443/agenda/agenda-coppetec
-    newTag: "1.0.2"
+    newTag: "1.0.13"
