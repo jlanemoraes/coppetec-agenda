@@ -10,4 +10,4 @@ images:
     newTag: "1.0.13"
 
 patches:
-  - path: patch-bind-port-80.yaml
+  - path: patch-porta-8080.yaml
