@@ -31,7 +31,7 @@ spec:
 
   steps:
     - name: clone
-      image: alpine/git:2.47.2
+      image: alpine/git:v2.52.0
 
       env:
         - name: HOME
