@@ -19,7 +19,7 @@ RUN mvn -B -DskipTests clean package && \
     cp "${JAR_FILE}" /workspace/app.jar
 
 # Etapa de execução
-FROM eclipse-temurin:17-jre-jammy
+FROM eclipse-temurin:22-jre-jammy
 
 RUN groupadd --system spring && \
     useradd --system --gid spring --create-home spring
